@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScriptHub Chat</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --dark-blue: #0d47a1;
+            --light-blue: #e8f0fe;
+            --background: #0a192f;
+            --sidebar: #0f213f;
+            --text: #ffffff;
+            --text-light: #cccccc;
+            --gray: #5f6368;
+            --accent: #4facfe;
+            --channel-active: rgba(74, 144, 226, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-title {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent) 0%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .channels {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .channel-group {
+            margin-bottom: 20px;
+        }
+
+        .channel-group-title {
+            padding: 8px 20px;
+            color: var(--text-light);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .channel {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .channel:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .channel.active {
+            background-color: var(--channel-active);
+        }
+
+        .channel.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(to bottom, var(--accent), var(--primary));
+        }
+
+        .channel-icon {
+            margin-right: 10px;
+            color: var(--text-light);
+            width: 20px;
+            text-align: center;
+        }
+
+        .channel.active .channel-icon {
+            color: var(--accent);
+        }
+
+        .channel-name {
+            flex: 1;
+        }
+
+        .user-panel {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .user-name {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        /* Main Chat Area */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+        }
+
+        .channel-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .channel-description {
+            margin-left: 10px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            animation: fadeIn 0.3s ease-out;
+            position: relative;
+            word-wrap: break-word;
+        }
+
+        .message.sent {
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.received {
+            align-self: flex-start;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .input-area {
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .input-container {
+            display: flex;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 5px;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            font-size: 16px;
+            outline: none;
+        }
+
+        #sendButton {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        #sendButton:hover {
+            transform: scale(1.1);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Scrollbar styling */
+        .channels::-webkit-scrollbar,
+        .messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .channels::-webkit-scrollbar-track,
+        .messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .channels::-webkit-scrollbar-thumb,
+        .messages::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 100;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .mobile-menu-button {
+                display: block;
+                position: fixed;
+                left: 10px;
+                top: 10px;
+                z-index: 90;
+                background: rgba(0, 0, 0, 0.5);
+                border: none;
+                color: white;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+        }
+
+        /* Desktop - hide mobile button */
+        .mobile-menu-button {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile menu button (hidden on desktop) -->
+    <button class="mobile-menu-button" id="mobileMenuButton">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar with channels -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">ScriptHub Chat</div>
+        </div>
+
+        <div class="channels">
+            <div class="channel-group">
+                <div class="channel-group-title">Script Channels</div>
+                <div class="channel active" data-channel="script-chat">
+                    <div class="channel-icon"><i class="fas fa-code"></i></div>
+                    <div class="channel-name">Script Chat</div>
+                </div>
+                <div class="channel" data-channel="executor-chat">
+                    <div class="channel-icon"><i class="fas fa-terminal"></i></div>
+                    <div class="channel-name">Executor Chat</div>
+                </div>
+            </div>
+
+            <div class="channel-group">
+                <div class="channel-group-title">General</div>
+                <div class="channel" data-channel="general-chat">
+                    <div class="channel-icon"><i class="fas fa-comments"></i></div>
+                    <div class="channel-name">General Chat</div>
+                </div>
+                <div class="channel" data-channel="help-chat">
+                    <div class="channel-icon"><i class="fas fa-question-circle"></i></div>
+                    <div class="channel-name">Help & Support</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="user-panel">
+            <div class="user-avatar" id="userAvatar">U</div>
+            <div class="user-name" id="userName">User1234</div>
+        </div>
+    </div>
+
+    <!-- Main chat area -->
+    <div class="main">
+        <div class="chat-header">
+            <div class="channel-title">Script Chat</div>
+            <div class="channel-description">Discuss scripts and coding</div>
+        </div>
+
+        <div class="messages" id="messages">
+            <!-- Messages will appear here -->
+            <div class="message received">
+                <div>Welcome to Script Chat! Feel free to discuss any scripting topics here.</div>
+                <div class="message-info">
+                    <span class="message-sender">System</span>
+                    <span>Just now</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-container">
+                <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
+                <button id="sendButton"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <script>
+        // Your Firebase configuration
+        const firebaseConfig = {
+  apiKey: "AIzaSyALx3eSCmDsLebtQ1YTc-jE1UhRwouSFBY",
+  authDomain: "scripthub-chat.firebaseapp.com",
+  databaseURL: "https://scripthub-chat-default-rtdb.firebaseio.com",
+  projectId: "scripthub-chat",
+  storageBucket: "scripthub-chat.firebasestorage.app",
+  messagingSenderId: "281298153679",
+  appId: "1:281298153679:web:6b2a24fbb790167aa287ba",
+  measurementId: "G-ZVSF2M2RS9"
+};
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // DOM elements
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const messagesContainer = document.getElementById('messages');
+        const mobileMenuButton = document.getElementById('mobileMenuButton');
+        const sidebar = document.getElementById('sidebar');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const channelTitle = document.querySelector('.channel-title');
+        const channelDescription = document.querySelector('.channel-description');
+        
+        // Channel data
+        const channels = {
+            'script-chat': {
+                title: 'Script Chat',
+                description: 'Discuss scripts and coding'
+            },
+            'executor-chat': {
+                title: 'Executor Chat',
+                description: 'Talk about executors and exploits'
+            },
+            'general-chat': {
+                title: 'General Chat',
+                description: 'General discussions'
+            },
+            'help-chat': {
+                title: 'Help & Support',
+                description: 'Get help with scripts'
+            }
+        };
+        
+        // Generate a random username and color
+        const randomNames = ['ScriptMaster', 'CodeNinja', 'ExecutorPro', 'LuaWizard', 'DevExpert'];
+        const randomColors = ['#4facfe', '#1a73e8', '#00f2fe', '#4285f4', '#34a853'];
+        
+        const username = randomNames[Math.floor(Math.random() * randomNames.length)] + Math.floor(Math.random() * 100);
+        const userColor = randomColors[Math.floor(Math.random() * randomColors.length)];
+        
+        userAvatar.textContent = username.charAt(0);
+        userAvatar.style.backgroundColor = userColor;
+        userName.textContent = username;
+        
+        // Current channel and message reference
+        let currentChannel = 'script-chat';
+        let currentMessageRef = database.ref('messages').orderByChild('channel').equalTo(currentChannel);
+        let isScrolledToBottom = true;
+        
+        // Check if user is at the bottom of the chat
+        messagesContainer.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = messagesContainer;
+            isScrolledToBottom = scrollHeight - scrollTop <= clientHeight + 10;
+        });
+        
+        // Auto-scroll to bottom if user was already there
+        const autoScroll = () => {
+            if (isScrolledToBottom) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        };
+        
+        // Add a new message to the chat
+        const addMessage = (message, isSent) => {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', isSent ? 'sent' : 'received');
+            
+            const content = document.createElement('div');
+            content.textContent = message.text;
+            
+            const info = document.createElement('div');
+            info.classList.add('message-info');
+            
+            const senderSpan = document.createElement('span');
+            senderSpan.classList.add('message-sender');
+            senderSpan.textContent = message.sender;
+            if (message.color) {
+                senderSpan.style.color = message.color;
+            }
+            
+            const timeSpan = document.createElement('span');
+            timeSpan.textContent = new Date(message.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            info.appendChild(senderSpan);
+            info.appendChild(timeSpan);
+            
+            messageElement.appendChild(content);
+            messageElement.appendChild(info);
+            messagesContainer.appendChild(messageElement);
+            
+            autoScroll();
+        };
+        
+        // Send a new message
+        const sendMessage = () => {
+            const messageText = messageInput.value.trim();
+            if (messageText === '') return;
+            
+            const message = {
+                text: messageText,
+                sender: username,
+                timestamp: Date.now(),
+                color: userColor,
+                channel: currentChannel
+            };
+            
+            // Push message to Firebase
+            database.ref('messages').push(message);
+            
+            // Clear input
+            messageInput.value = '';
+            messageInput.focus();
+            
+            // Add to UI immediately for better UX
+            addMessage(message, true);
+        };
+        
+        // Change channel
+        const changeChannel = (channelId) => {
+            // Remove previous message listener
+            currentMessageRef.off('child_added');
+            
+            // Update active channel in UI
+            document.querySelectorAll('.channel').forEach(channel => {
+                channel.classList.remove('active');
+                if (channel.dataset.channel === channelId) {
+                    channel.classList.add('active');
+                }
+            });
+            
+            // Update channel info
+            currentChannel = channelId;
+            channelTitle.textContent = channels[channelId].title;
+            channelDescription.textContent = channels[channelId].description;
+            
+            // Clear messages
+            messagesContainer.innerHTML = '';
+            
+            // Add welcome message
+            const welcomeMessage = {
+                text: `Welcome to ${channels[channelId].title}! ${channels[channelId].description}`,
+                sender: 'System',
+                timestamp: Date.now()
+            };
+            addMessage(welcomeMessage, false);
+            
+            // Set up new message listener for this channel
+            currentMessageRef = database.ref('messages').orderByChild('channel').equalTo(channelId);
+            currentMessageRef.on('child_added', (snapshot) => {
+                const message = snapshot.val();
+                // Don't add the message if it's from the current user (already added when sent)
+                if (message.sender !== username) {
+                    addMessage(message, false);
+                }
+            });
+            
+            // Close mobile sidebar if open
+            sidebar.classList.remove('active');
+        };
+        
+        // Set up channel click events
+        document.querySelectorAll('.channel').forEach(channel => {
+            channel.addEventListener('click', () => {
+                changeChannel(channel.dataset.channel);
+            });
+        });
+        
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        mobileMenuButton.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+        });
+        
+        // Initialize with the default channel
+        changeChannel(currentChannel);
+        
+        // Focus the input field when page loads
+        window.addEventListener('load', () => {
+            messageInput.focus();
+            autoScroll();
+        });
+    </script>
+</body>
+</html>
